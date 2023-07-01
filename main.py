@@ -7,7 +7,19 @@ import pyautogui
 from pynput import keyboard
 import numpy as np
 import tensorflow as tf
-from training import preprocess_image
+
+
+def preprocess_image(image):
+    # Resize the image to the desired dimensions
+    resized_image = image.resize((50, 50))
+
+    # Convert the image to numpy array
+    image_array = np.array(resized_image, dtype=np.float32)
+
+    # Normalize the pixel values (optional)
+    normalized_image = image_array / 255.0
+
+    return normalized_image
 
 
 def is_tc_queue(image):
@@ -17,7 +29,7 @@ def is_tc_queue(image):
     prediction = model.predict(np.expand_dims(processed, axis=0), verbose=0)
 
     predicted_prob = prediction[0][0]
-    print(predicted_prob)
+    print(f"ℹ️ {predicted_prob:.{4}f}")
     threshold = 0.93
 
     if predicted_prob >= threshold:
@@ -60,20 +72,23 @@ def on_press(key):
     global number_of_town_centers
     if all(k in pressed_keys for k in combination_on_off):
         manual_on_off = not manual_on_off
-        print('Toggle play_voice: ' + str(manual_on_off))
+        icon = '🟢' if manual_on_off else '🔴'
+        print(f'{icon} Toggle play_voice: ' + str(manual_on_off))
     if all(k in pressed_keys for k in combination_add_tc):
         number_of_town_centers += 1
-        print('number of Town Centers: ' + str(number_of_town_centers))
+        if number_of_town_centers > 3:
+            number_of_town_centers = 3
+        print('ℹ️ number of Town Centers: ' + str(number_of_town_centers))
     if all(k in pressed_keys for k in combination_remove_tc):
         number_of_town_centers -= 1
         if number_of_town_centers < 1:
             number_of_town_centers = 1
-        print('number of Town Centers: ' + str(number_of_town_centers))
+        print('ℹ️ number of Town Centers: ' + str(number_of_town_centers))
     if key == keyboard.Key.f11:
-        file_path = os.path.join('negatives', f'{img_counter}.png')
-        img_counter += 1
-        screenshot = pyautogui.screenshot(region=(50, 77, 50, 50))
-        screenshot.save(file_path)
+        # file_path = os.path.join('negatives', f'{img_counter}.png')
+        # img_counter += 1
+        # screenshot = pyautogui.screenshot(region=(50, 77, 50, 50))
+        # screenshot.save(file_path)
         pass
 
 
@@ -122,7 +137,7 @@ def main_loop():
                 pass
             else:
                 if i + 1 <= number_of_town_centers:
-                    print('missing villager for tc number ' + str(i + 1))
+                    print('⚠️ Missing villager for tc number ' + str(i + 1))
                     play_voice = True
 
             if i + 1 == number_of_town_centers:
@@ -139,9 +154,21 @@ def main_loop():
             continue
 
 
-# Start the keypress listener on a separate thread
-keypress_thread = threading.Thread(target=keypress_listener)
-keypress_thread.start()
+def main():
+    # Start the keypress listener on a separate thread
+    keypress_thread = threading.Thread(target=keypress_listener)
+    keypress_thread.start()
 
-# Continue executing other code (e.g., playing music) on the main thread
-main_loop()
+    # Continue executing other code (e.g., playing music) on the main thread
+    main_loop()
+
+
+if __name__ == "__main__":
+    print('-' * 50)
+    print('Controls: \n')
+    print('🎚️ Shift-f11: Turn it on/off\n')
+    print('➕ Shift-f12: Add TC (max 3)')
+    print('➖ Shift-f10: Remove TC (min 1)\n')
+    print('-' * 50)
+
+    main()
