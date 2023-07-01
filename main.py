@@ -2,6 +2,7 @@ import os.path
 import threading
 import time
 import pygame
+import pygame_menu
 import pyautogui
 from pynput import keyboard
 import numpy as np
@@ -13,11 +14,11 @@ def is_tc_queue(image):
     processed = preprocess_image(image)
 
     # Perform the prediction
-    prediction = model.predict(np.expand_dims(processed, axis=0))
+    prediction = model.predict(np.expand_dims(processed, axis=0), verbose=0)
 
     predicted_prob = prediction[0][0]
     print(predicted_prob)
-    threshold = 0.95
+    threshold = 0.93
 
     if predicted_prob >= threshold:
         return True
@@ -26,10 +27,10 @@ def is_tc_queue(image):
 
 
 # 3 = (0, 77, 200, 50)
-# 1 = (0, 77, 126-77, 50)
+# 1 = (0, 77, 50, 50)
 region = (0, 77, 200, 50)
 
-img_counter = 243
+img_counter = 115
 
 
 pressed_keys = set()
@@ -41,7 +42,9 @@ manual_on_off = False
 volume = 0.4
 
 # Keybindings
-combination = {keyboard.Key.shift, keyboard.Key.f11}
+combination_on_off = {keyboard.Key.shift, keyboard.Key.f11}
+combination_add_tc = {keyboard.Key.shift, keyboard.Key.f12}
+combination_remove_tc = {keyboard.Key.shift, keyboard.Key.f10}
 
 # -------------
 
@@ -54,13 +57,22 @@ def on_press(key):
     pressed_keys.add(key)
     global manual_on_off
     global img_counter
-    if all(k in pressed_keys for k in combination):
-        print('Toggle play_voice')
+    global number_of_town_centers
+    if all(k in pressed_keys for k in combination_on_off):
         manual_on_off = not manual_on_off
+        print('Toggle play_voice: ' + str(manual_on_off))
+    if all(k in pressed_keys for k in combination_add_tc):
+        number_of_town_centers += 1
+        print('number of Town Centers: ' + str(number_of_town_centers))
+    if all(k in pressed_keys for k in combination_remove_tc):
+        number_of_town_centers -= 1
+        if number_of_town_centers < 1:
+            number_of_town_centers = 1
+        print('number of Town Centers: ' + str(number_of_town_centers))
     if key == keyboard.Key.f11:
-        file_path = os.path.join('positives', f'{img_counter}.png')
+        file_path = os.path.join('negatives', f'{img_counter}.png')
         img_counter += 1
-        screenshot = pyautogui.screenshot(region=region)
+        screenshot = pyautogui.screenshot(region=(50, 77, 50, 50))
         screenshot.save(file_path)
         pass
 
@@ -96,6 +108,10 @@ def main_loop():
     pygame.mixer.music.set_volume(volume)
     number_of_town_centers = 1
     while True:
+        if manual_on_off is False:
+            time.sleep(0.25)
+            continue
+
         screenshot = pyautogui.screenshot(region=region)
         play_voice = False
 
@@ -103,13 +119,14 @@ def main_loop():
 
         for i, slot in enumerate(slots):
             if is_tc_queue(slot):
-                number_of_town_centers = max([number_of_town_centers, i + 1])
-                if i + 1 > number_of_town_centers:
-                    print('number of town centers updated to: ' + number_of_town_centers)
+                pass
             else:
                 if i + 1 <= number_of_town_centers:
                     print('missing villager for tc number ' + str(i + 1))
                     play_voice = True
+
+            if i + 1 == number_of_town_centers:
+                break
 
         if play_voice and manual_on_off:
             pygame.mixer.music.play()
