@@ -153,7 +153,7 @@ def main_loop():
         screenshot = pyautogui.screenshot(region=region)
         play_voice = False
 
-        slots = [screenshot.crop(crops[0]), screenshot.crop(crops[0]), screenshot.crop(crops[0])]
+        slots = [screenshot.crop(crops[0]), screenshot.crop(crops[1]), screenshot.crop(crops[2])]
 
         for i, slot in enumerate(slots):
             if is_tc_queue(slot):
