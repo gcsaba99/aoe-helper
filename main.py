@@ -1,64 +1,14 @@
-import os.path
 import threading
 import time
 import pygame
-import pygame_menu
 import pyautogui
 from pynput import keyboard
-import numpy as np
 import tensorflow as tf
 
+from utils import is_tc_queue, region_and_crops_from_size
 
-def preprocess_image(image):
-    # Resize the image to the desired dimensions
-    resized_image = image.resize((50, 50))
-
-    # Convert the image to numpy array
-    image_array = np.array(resized_image, dtype=np.float32)
-
-    # Normalize the pixel values (optional)
-    normalized_image = image_array / 255.0
-
-    return normalized_image
-
-
-def is_tc_queue(image):
-    processed = preprocess_image(image)
-
-    # Perform the prediction
-    prediction = model.predict(np.expand_dims(processed, axis=0), verbose=0)
-
-    predicted_prob = prediction[0][0]
-    print(f"ℹ️ {predicted_prob:.{4}f}")
-    threshold = 0.93
-
-    if predicted_prob >= threshold:
-        return True
-    else:
-        return False
-
-
-crops_1440p = [(0, 0, 50, 50), (50, 0, 100, 50), (100, 0, 150, 50)]
-crops_1080p = [(0, 0, 36, 36), (36, 0, 72, 36), (72, 0, 108, 36)]
-
-region_1440p = (0, 77, 200, 50)
-region_1080p = (0, 58, 112, 36)
-
-region = region_1080p
-crops = crops_1080p
-
-full_screen_shot = pyautogui.screenshot()
-screenshot_size = full_screen_shot.size
-
-
-if screenshot_size == (1920, 1080):
-    region = region_1080p
-    crops = crops_1080p
-elif screenshot_size == (2560, 1440):
-    region = region_1440p
-    crops = crops_1440p
-else:
-    print('⚠️ This resolution is not configured, the program will probably not work.')
+screenshot_size = pyautogui.screenshot().size
+region, crops = region_and_crops_from_size(screenshot_size)
 
 print(f"ℹ️ Screen size is {screenshot_size}px")
 
@@ -156,7 +106,7 @@ def main_loop():
         slots = [screenshot.crop(crops[0]), screenshot.crop(crops[1]), screenshot.crop(crops[2])]
 
         for i, slot in enumerate(slots):
-            if is_tc_queue(slot):
+            if is_tc_queue(slot, model):
                 pass
             else:
                 if i + 1 <= number_of_town_centers:
