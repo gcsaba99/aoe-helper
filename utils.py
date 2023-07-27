@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from constants import RESOLUTIONS, DEFAUT_RESOLUTION
+from constants import RESOLUTIONS, DEFAULT_RESOLUTION
 
 
 
@@ -43,8 +43,8 @@ def region_and_crops_from_size(size):
             break
     else:
         print('⚠️ This resolution is not configured, the program will probably not work.'
-              f" Defaulting to {DEFAUT_RESOLUTION}.")
-        resolution = RESOLUTIONS[DEFAUT_RESOLUTION]
+              f" Defaulting to {DEFAULT_RESOLUTION}.")
+        resolution = RESOLUTIONS[DEFAULT_RESOLUTION]
 
     return resolution["region"], resolution["crops"]
 
